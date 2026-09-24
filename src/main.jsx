@@ -16,7 +16,8 @@ const ref=ready?doc(db,"site","main"):null;
 const emptyData={
   profile:{name:"",role:"",bio:"",location:"",email:"",phone:"",github:"",linkedin:"",avatarUrl:"",cvUrl:"",availability:""},
   skills:[],projects:[],experience:[],education:[],certificates:[],
-  network:{internetLabel:"",routerLabel:"",switchLabel:"",clients:[],note:""}
+  network:{internetLabel:"",routerLabel:"",switchLabel:"",clients:[],note:""},
+  terminal:{username:"hani@portfolio",whoami:"application_developer · network_enthusiast",statusCommand:"status",statusValue:"available_for_projects = true"}
 };
 
 function normalize(raw){
@@ -29,7 +30,8 @@ function normalize(raw){
     experience:Array.isArray(raw.experience)?raw.experience:[],
     education:Array.isArray(raw.education)?raw.education:[],
     certificates:Array.isArray(raw.certificates)?raw.certificates:[],
-    network:{...emptyData.network,...(raw.network||{})}
+    network:{...emptyData.network,...(raw.network||{})},
+    terminal:{...emptyData.terminal,...(raw.terminal||{})}
   };
 }
 
@@ -101,11 +103,11 @@ function Home({data:d}){
           {d.profile.email&&<span><Mail size={13}/> {d.profile.email}</span>}
         </div>
         <div className="terminal">
-          <div className="terminal-top"><span className="dot"/><span className="dot"/><span className="dot"/><b>hani@portfolio ~</b></div>
-          <span className="green">hani@portfolio</span>:~$ whoami<br/>
-          application_developer · network_enthusiast<br/>
-          <span className="green">hani@portfolio</span>:~$ status<br/>
-          <span className="cyan">available_for_projects = true</span>
+          <div className="terminal-top"><span className="dot"/><span className="dot"/><span className="dot"/><b>{d.terminal.username||"hani@portfolio"} ~</b></div>
+          <span className="green">{d.terminal.username||"hani@portfolio"}</span>:~$ whoami<br/>
+          {d.terminal.whoami}<br/>
+          <span className="green">{d.terminal.username||"hani@portfolio"}</span>:~$ {d.terminal.statusCommand||"status"}<br/>
+          <span className="cyan">{d.terminal.statusValue}</span>
         </div>
       </div>
       <div className="visual">
@@ -205,8 +207,8 @@ function Dashboard({data,setData,user,close}){
   async function save(next){setD(next);if(!ready)return setMsg("Firebase غير مُعد");try{await setDoc(ref,next);setData(next);setMsg("تم الحفظ على السحابة ✓")}catch(e){setMsg("تعذر الحفظ: "+e.message)}}
   function add(k,x){save({...d,[k]:[...d[k],{...x,id:crypto.randomUUID()}]})}
   function del(k,id){save({...d,[k]:d[k].filter(x=>x.id!==id)})}
-  const tabs=[["profile","المعلومات الشخصية",Briefcase],["skills","المهارات",Code2],["projects","المشاريع",ArrowUpRight],["experience","الخبرات",Briefcase],["education","التعليم",GraduationCap],["certificates","الشهادات",ShieldCheck],["network","مختبر الشبكات",Network]];
-  return <div className="admin-shell"><aside className="admin-side"><h3><span className="cyan">&gt;_</span> HANI.ADMIN</h3><p style={{fontSize:10,color:"#6f8097",wordBreak:"break-all"}}>{user.email}</p>{tabs.map(([k,label,I])=><button className={tab===k?"active":""} onClick={()=>setTab(k)} key={k}><I size={15}/>{label}</button>)}<button onClick={async()=>{await signOut(auth);close()}} style={{marginTop:"auto"}}><LogOut size={15}/> الموقع العام</button></aside><main className="admin-main"><div className="admin-top"><div className="admin-title"><h1>لوحة التحكم</h1><p>إدارة محتوى Portfolio والمشاريع والصور من مكان واحد.</p></div></div>{msg&&<div className="notice">{msg}</div>}{tab==="profile"&&<ProfileEditor data={d} save={save}/>}
+  const tabs=[["profile","المعلومات الشخصية",Briefcase],["terminal","واجهة Terminal",Code2],["skills","المهارات",Code2],["projects","المشاريع",ArrowUpRight],["experience","الخبرات",Briefcase],["education","التعليم",GraduationCap],["certificates","الشهادات",ShieldCheck],["network","مختبر الشبكات",Network]];
+  return <div className="admin-shell"><aside className="admin-side"><h3><span className="cyan">&gt;_</span> HANI.ADMIN</h3><p style={{fontSize:10,color:"#6f8097",wordBreak:"break-all"}}>{user.email}</p>{tabs.map(([k,label,I])=><button className={tab===k?"active":""} onClick={()=>setTab(k)} key={k}><I size={15}/>{label}</button>)}<button onClick={async()=>{await signOut(auth);close()}} style={{marginTop:"auto"}}><LogOut size={15}/> الموقع العام</button></aside><main className="admin-main"><div className="admin-top"><div className="admin-title"><h1>لوحة التحكم</h1><p>إدارة محتوى Portfolio والمشاريع والصور من مكان واحد.</p></div></div>{msg&&<div className="notice">{msg}</div>}{tab==="profile"&&<ProfileEditor data={d} save={save}/>} {tab==="terminal"&&<TerminalEditor data={d} save={save}/>}
   {tab==="skills"&&<CollectionEditor title="المهارات" items={d.skills} fields={["name","type"]} add={x=>add("skills",x)} del={id=>del("skills",id)}/>}
   {tab==="projects"&&<CollectionEditor title="المشاريع" items={d.projects} fields={["title","desc","tags","link","image"]} add={x=>add("projects",x)} del={id=>del("projects",id)} imageField="image"/>}
   {tab==="experience"&&<CollectionEditor title="الخبرات" items={d.experience} fields={["title","org","period","desc"]} add={x=>add("experience",x)} del={id=>del("experience",id)}/>}
@@ -221,6 +223,29 @@ function ProfileEditor({data,save}){
   return <div className="admin-panel"><h2>المعلومات الشخصية</h2><div className="form-grid">
     {["name","role","bio","location","email","phone","github","linkedin","avatarUrl","cvUrl","availability"].map(k=><Field key={k} label={k==="avatarUrl"?"رابط الصورة HTTPS":k==="cvUrl"?"رابط CV PDF HTTPS":k} type={k==="bio"?"textarea":"text"} value={d.profile[k]} set={v=>set(k,v)}/>)}
   </div>{d.profile.avatarUrl&&<img className="preview" src={d.profile.avatarUrl} alt="preview" onError={e=>e.currentTarget.style.display="none"}/>}<button className="btn primary" onClick={()=>save(d)}><Save size={15}/> حفظ المعلومات</button></div>
+}
+
+function TerminalEditor({data,save}){
+  const[d,setD]=useState(data);useEffect(()=>setD(data),[data]);
+  const set=(k,v)=>setD({...d,terminal:{...d.terminal,[k]:v}});
+  return <div className="admin-panel"><h2>واجهة Terminal</h2>
+    <p style={{color:"#8092aa",fontSize:11}}>هذه النصوص تظهر مباشرة داخل Terminal في الصفحة الرئيسية.</p>
+    <div className="form-grid">
+      <Field label="اسم المستخدم" value={d.terminal.username} set={v=>set("username",v)}/>
+      <Field label="سطر whoami" value={d.terminal.whoami} set={v=>set("whoami",v)}/>
+      <Field label="الأمر بعد علامة $" value={d.terminal.statusCommand} set={v=>set("statusCommand",v)}/>
+      <Field label="قيمة الحالة" value={d.terminal.statusValue} set={v=>set("statusValue",v)}/>
+    </div>
+    <div className="notice">يمكنك مثلًا كتابة: Flutter Developer · Network Engineer</div>
+    <div className="terminal" style={{marginTop:12}}>
+      <div className="terminal-top"><span className="dot"/><span className="dot"/><span className="dot"/><b>{d.terminal.username||"hani@portfolio"} ~</b></div>
+      <span className="green">{d.terminal.username||"hani@portfolio"}</span>:~$ whoami<br/>
+      {d.terminal.whoami}<br/>
+      <span className="green">{d.terminal.username||"hani@portfolio"}</span>:~$ {d.terminal.statusCommand||"status"}<br/>
+      <span className="cyan">{d.terminal.statusValue}</span>
+    </div>
+    <button className="btn primary" onClick={()=>save(d)}><Save size={15}/> حفظ Terminal</button>
+  </div>
 }
 
 function NetworkEditor({data,save}){
