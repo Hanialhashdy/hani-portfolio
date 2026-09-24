@@ -4,7 +4,7 @@ service cloud.firestore {
     match /site/{docId} {
       allow read: if true;
       allow write: if request.auth != null
-        && request.auth.token.email == 'YOUR_ADMIN_EMAIL@example.com';
+        && request.auth.token.email == 'Hanialhashdy00@gmail.com';
     }
   }
 }
